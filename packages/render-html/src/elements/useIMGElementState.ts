@@ -11,6 +11,8 @@ import { ImageDimensions } from '../shared-types';
 import useImageConcreteDimensions from './useImageConcreteDimensions';
 import { getIMGState } from './getIMGState';
 import useImageSpecifiedDimensions from './useImageSpecifiedDimensions';
+import { ImageCache } from './CachedImage';
+import RNFetchBlob from 'react-native-fetch-blob';
 
 function getImageSizeAsync({
   uri,
@@ -22,10 +24,29 @@ function getImageSizeAsync({
   return new Promise<ImageDimensions>((onsuccess, onerror) => {
     const onImageDimensionsSuccess = (width: number, height: number) =>
       onsuccess({ width, height });
-    if (headers) {
-      Image.getSizeWithHeaders(uri, headers, onImageDimensionsSuccess, onerror);
-    } else {
-      Image.getSize(uri, onImageDimensionsSuccess, onerror);
+    const cachedImage = ImageCache.get().getCachedImagePath(uri);
+    const cachedImagePath = cachedImage && cachedImage.path || undefined;
+    if(cachedImagePath) {
+      // We have image uri in ImageCache.
+      // We check here if IOS didn't delete the cache content
+      RNFetchBlob.fs.exists(cachedImagePath).then((exists: boolean) => {
+        if (exists) {
+          Image.getSize(cachedImagePath, onImageDimensionsSuccess, onerror);
+        } else {
+          if (headers) {
+            Image.getSizeWithHeaders(uri, headers, onImageDimensionsSuccess, onerror);
+          } else {
+            Image.getSize(uri, onImageDimensionsSuccess, onerror);
+          }
+        }
+      });
+    }
+    else {
+      if (headers) {
+        Image.getSizeWithHeaders(uri, headers, onImageDimensionsSuccess, onerror);
+      } else {
+        Image.getSize(uri, onImageDimensionsSuccess, onerror);
+      }
     }
   });
 }

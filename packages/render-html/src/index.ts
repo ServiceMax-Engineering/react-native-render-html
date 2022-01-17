@@ -172,3 +172,6 @@ export { default as IMGElementContentSuccess } from './elements/IMGElementConten
 export { default as IMGElementContentAlt } from './elements/IMGElementContentAlt';
 export * from './elements/img-types';
 export { useIMGElementProps } from './renderers/IMGRenderer';
+
+// IMG Cache
+export { ImageCache } from './elements/CachedImage';

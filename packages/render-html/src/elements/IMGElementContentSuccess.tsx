@@ -1,12 +1,11 @@
 import React, { ReactElement, useCallback } from 'react';
 import {
-  Image,
   ImageErrorEventData,
   ImageStyle,
   NativeSyntheticEvent
 } from 'react-native';
 import { IMGElementStateSuccess } from './img-types';
-
+import {CachedImage} from './CachedImage';
 const defaultImageStyle: ImageStyle = { resizeMode: 'cover' };
 
 /**
@@ -24,7 +23,7 @@ export default function IMGElementContentSuccess({
     [onError]
   );
   return (
-    <Image
+    <CachedImage
       source={source}
       onError={onImageError}
       style={[defaultImageStyle, dimensions, imageStyle]}
