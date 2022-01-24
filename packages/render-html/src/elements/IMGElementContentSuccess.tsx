@@ -15,7 +15,9 @@ export default function IMGElementContentSuccess({
   source,
   imageStyle,
   dimensions,
-  onError
+  onError,
+  alt,
+  altColor
 }: IMGElementStateSuccess): ReactElement {
   const onImageError = useCallback(
     ({ nativeEvent: { error } }: NativeSyntheticEvent<ImageErrorEventData>) =>
@@ -28,6 +30,9 @@ export default function IMGElementContentSuccess({
       onError={onImageError}
       style={[defaultImageStyle, dimensions, imageStyle]}
       testID="image-success"
+      mutable={false}
+      alt={alt}
+      altColor={altColor}
     />
   );
 }

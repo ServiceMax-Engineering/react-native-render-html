@@ -2,6 +2,7 @@ import React, {Component} from "react";
 import {Image, ImageBackground, ImageProperties, ImageURISource, Platform} from "react-native";
 import RNFetchBlob from 'react-native-fetch-blob';
 const SHA1 = require("crypto-js/sha1");
+import IMGElementContentAlt from './IMGElementContentAlt';
 
 const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
 const BASE_DIR = RNFetchBlob.fs.dirs.CacheDir + "/react-native-img-cache";
@@ -17,7 +18,8 @@ type CacheEntry = {
     downloading: boolean;
     handlers: CacheHandler[];
     path: string | undefined;
-    immutable: boolean;
+    immutable: boolean | true;
+    authorizationError: boolean | false;
     task?: any;
 };
 
@@ -52,18 +54,21 @@ export class ImageCache {
         return RNFetchBlob.fs.unlink(BASE_DIR);
     }
 
-    on(source: CachedImageURISource, handler: CacheHandler, immutable?: boolean) {
+    on(source: CachedImageURISource, handler: CacheHandler, immutable: boolean = true) {
         const {uri} = source;
         if (!this.cache[uri]) {
             this.cache[uri] = {
                 source,
                 downloading: false,
-                handlers: [handler],
+                handlers:[],
                 immutable: immutable === true,
                 path: immutable === true ? this.getPath(uri, immutable) : undefined
             };
+            if (handler) {
+                this.cache[uri].handlers = [handler];
+            }
         } else {
-            this.cache[uri].handlers.push(handler);
+            handler && this.cache[uri].handlers.push(handler);
         }
         this.get(uri);
     }
@@ -74,7 +79,7 @@ export class ImageCache {
 
     dispose(uri: string, handler: CacheHandler) {
         const cache = this.cache[uri];
-        if (cache) {
+        if (cache && cache.handlers) {
             cache.handlers.forEach((h, index) => {
                 if (h === handler) {
                     cache.handlers.splice(index, 1);
@@ -106,10 +111,20 @@ export class ImageCache {
             cache.downloading = true;
             const method = source.method ? source.method : "GET";
             cache.task = RNFetchBlob.config({ path }).fetch(method, uri, source.headers);
-            cache.task.then(() => {
-                cache.downloading = false;
-                cache.path = path;
-                this.notify(uri);
+            cache.task.then((resp: RNFetchBlobFetchResponse) => {
+                if (resp.respInfo.status == 401) {
+                    // Unauthorized
+                    this.cache[uri].path = undefined;
+                    cache.downloading = false;
+                    cache.authorizationError = true;
+                    RNFetchBlob.fs.unlink(path);
+                    this.notify(uri);
+                }
+                else {
+                    cache.downloading = false;
+                    cache.path = path;
+                    this.notify(uri);
+                }
             }).catch(() => {
                 cache.downloading = false;
                 RNFetchBlob.fs.unlink(path);
@@ -136,7 +151,7 @@ export class ImageCache {
 
     private notify(uri: string) {
         const handlers = this.cache[uri].handlers;
-        handlers.forEach(handler => {
+        handlers && handlers.forEach(handler => {
             handler(this.cache[uri].path as string);
         });
     }
@@ -153,6 +168,8 @@ export interface CustomCachedImageProps extends CachedImageProps {
 
 export interface CachedImageState {
     path: string | undefined;
+    error: boolean | false;
+    key: number | -1;
 }
 
 export abstract class BaseCachedImage<P extends CachedImageProps> extends Component<P, CachedImageState>  {
@@ -160,7 +177,13 @@ export abstract class BaseCachedImage<P extends CachedImageProps> extends Compon
     private uri: string | undefined;
 
     private handler: CacheHandler = (path: string) => {
-        this.setState({ path });
+        if (path === undefined) {
+            this.props.onError && this.props.onError({nativeEvent:{error:new Error("unauthorized")}});
+            this.setState({ error: true, key: Math.random() });
+        }
+        else {
+            this.setState({ path, error: false, key: Math.random() });
+        }
     }
 
     private dispose() {
@@ -225,10 +248,17 @@ export class CachedImage extends BaseCachedImage<CachedImageProps> {
 
     render() {
         const props = this.getProps();
+        const { error, key } = this.state;
+        const ownProps = this.props;
+        if (error) {
+            return (
+                <IMGElementContentAlt {...ownProps} testID="image-error" />
+            );
+        }
         if (React.Children.count(this.props.children) > 0) {
             console.warn("Using <CachedImage> with children is deprecated, use <CachedImageBackground> instead.");
         }
-        return <Image {...props}>{this.props.children}</Image>;
+        return <Image {...props}  key = {key}>{this.props.children}</Image>;
     }
 }
 

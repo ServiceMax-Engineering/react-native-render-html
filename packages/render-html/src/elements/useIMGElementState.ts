@@ -25,6 +25,9 @@ function getImageSizeAsync({
     const onImageDimensionsSuccess = (width: number, height: number) =>
       onsuccess({ width, height });
     const cachedImage = ImageCache.get().getCachedImagePath(uri);
+    if (cachedImage && cachedImage.authorizationError) {
+      return onerror();
+    }
     const cachedImagePath = cachedImage && cachedImage.path || undefined;
     if(cachedImagePath) {
       // We have image uri in ImageCache.
