@@ -1,6 +1,7 @@
 import React, {Component} from "react";
-import {Image, ImageBackground, ImageProperties, ImageURISource, Platform} from "react-native";
+import {Image, ImageBackground, ImageProperties, ImageURISource, Platform, ViewStyle} from "react-native";
 import RNFetchBlob from 'react-native-fetch-blob';
+import { ImageDimensions } from "..";
 const SHA1 = require("crypto-js/sha1");
 import IMGElementContentAlt from './IMGElementContentAlt';
 
@@ -19,7 +20,7 @@ type CacheEntry = {
     handlers: CacheHandler[];
     path: string | undefined;
     immutable: boolean | true;
-    authorizationError: boolean | false;
+    authorizationError?: boolean | false;
     task?: any;
 };
 
@@ -111,7 +112,7 @@ export class ImageCache {
             cache.downloading = true;
             const method = source.method ? source.method : "GET";
             cache.task = RNFetchBlob.config({ path }).fetch(method, uri, source.headers);
-            cache.task.then((resp: RNFetchBlobFetchResponse) => {
+            cache.task.then((resp: any) => {
                 if (resp.respInfo.status == 401) {
                     // Unauthorized
                     this.cache[uri].path = undefined;
@@ -159,7 +160,10 @@ export class ImageCache {
 
 export interface CachedImageProps extends ImageProperties {
     mutable?: boolean;
-
+    alt?: string;
+    altColor?: string;
+    containerStyle: ViewStyle;
+    dimensions: ImageDimensions;
 }
 
 export interface CustomCachedImageProps extends CachedImageProps {
@@ -178,7 +182,32 @@ export abstract class BaseCachedImage<P extends CachedImageProps> extends Compon
 
     private handler: CacheHandler = (path: string) => {
         if (path === undefined) {
-            this.props.onError && this.props.onError({nativeEvent:{error:new Error("unauthorized")}});
+            this.props.onError && this.props.onError({
+                nativeEvent: { error: new Error("unauthorized") },
+                currentTarget: 1,
+                target: 1,
+                bubbles: false,
+                cancelable: false,
+                defaultPrevented: false,
+                eventPhase: 0,
+                isTrusted: false,
+                preventDefault: function (): void {
+                    
+                },
+                isDefaultPrevented: function (): boolean {
+                    return false;
+                },
+                stopPropagation: function (): void {
+                    
+                },
+                isPropagationStopped: function (): boolean {
+                    return false;
+                },
+                persist: function (): void {
+                },
+                timeStamp: 0,
+                type: ""
+            });
             this.setState({ error: true, key: Math.random() });
         }
         else {
@@ -252,7 +281,7 @@ export class CachedImage extends BaseCachedImage<CachedImageProps> {
         const ownProps = this.props;
         if (error) {
             return (
-                <IMGElementContentAlt {...ownProps} testID="image-error" />
+                <IMGElementContentAlt {...ownProps} source={{uri:''}} testID="image-error" />
             );
         }
         if (React.Children.count(this.props.children) > 0) {

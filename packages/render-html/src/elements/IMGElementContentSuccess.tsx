@@ -33,6 +33,8 @@ export default function IMGElementContentSuccess({
       mutable={false}
       alt={alt}
       altColor={altColor}
+      containerStyle={imageStyle}
+      dimensions={dimensions}
     />
   );
 }
