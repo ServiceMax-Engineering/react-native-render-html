@@ -16,11 +16,16 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  */
 function IMGElementContentLoading({
   dimensions,
-  children
+  altColor
 }) {
   return /*#__PURE__*/_react.default.createElement(_reactNative.View, {
-    style: dimensions,
+    style: [dimensions, {
+      justifyContent: 'center',
+      alignItems: 'center'
+    }],
     testID: "image-loading"
-  }, children);
+  }, /*#__PURE__*/_react.default.createElement(_reactNative.ActivityIndicator, {
+    color: altColor
+  }));
 }
 //# sourceMappingURL=IMGElementContentLoading.js.map

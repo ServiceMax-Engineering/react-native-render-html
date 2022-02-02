@@ -1,5 +1,5 @@
 import React, { PropsWithChildren, ReactElement } from 'react';
-import { View } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { IMGElementStateLoading } from './img-types';
 
 /**
@@ -7,11 +7,11 @@ import { IMGElementStateLoading } from './img-types';
  */
 export default function IMGElementContentLoading({
   dimensions,
-  children
+  altColor,
 }: PropsWithChildren<IMGElementStateLoading>): ReactElement {
   return (
-    <View style={dimensions} testID="image-loading">
-      {children}
+    <View style={[dimensions, { justifyContent: 'center', alignItems: 'center' }]} testID="image-loading">
+      <ActivityIndicator color={altColor} />
     </View>
   );
 }
